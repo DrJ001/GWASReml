@@ -5,7 +5,7 @@ Version: 1.0-0
 Date: 2020-07-09
 Author: Julian Taylor <julian.taylor@adelaide.edu.au>
 Maintainer: Julian Taylor <julian.taylor@adelaide.edu.au>
-Depends: R (>= 3.0.0), wgaim, qtl
+Depends: R (>= 3.0.0), qtl
 Imports: ggplot2, pracma, reshape
 SystemRequirements: asreml-R 4.x
 Description: This package conducts genome wide multi-(envronment/treatment/variate) QTL/Association analysis using the fucntionality of the linear mixed modelling R package ASReml-R V4.  
