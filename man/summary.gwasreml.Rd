@@ -17,7 +17,7 @@ format.
 }
 \details{
   It is important that the \code{genObj} is not missing in
-  \code{summary.wgaim()} as it contains vital summary information about
+  \code{summary.gwasreml()} as it contains vital summary information about
   each of the QTL detected.
 }
 \value{A summary of the QTL component of the \code{"gwasreml"} object is

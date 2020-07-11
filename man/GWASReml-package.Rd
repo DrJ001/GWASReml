@@ -18,7 +18,7 @@ License: \tab GPL 2\cr
 }
 Welcome to version 1.x of \pkg{GW-ASReml}! The documentation given in this help file is
 only brief and users should consult individual help files for the main functions of the
-package. The packge requires users have an installed and fully licensed
+package. The package requires users have an installed and fully licensed
 version of ASReml-R V4 (see
 \url{https://www.vsni.co.uk/software/asreml-r} for more information).
 
@@ -42,10 +42,10 @@ of a multi-trait term in the model. With this term in place, each
 marker in the chromosome being tested are placed in the fixed model with
 a main marker effect term and a trait by marker interaction term. Once
 all markers have been scanned \code{gwasreml.asreml()} automatically
-finds putative interaction and main effect QTL. A degree of fexibility
+finds putative interaction and main effect QTL. A degree of flexibility
 is provided for this automation by altering the two arguments
 \code{qtl.window} and \code{effects.window} in
-\code{gwasreml.asreml()}. To provide further fexibility, updating of the
+\code{gwasreml.asreml()}. To provide further flexibility, updating of the
 returned object can occur using \code{\link{update.gwasreml}} where
 the arguments of \code{gwasreml.asreml()} can be altered and the
 analysis re-run.

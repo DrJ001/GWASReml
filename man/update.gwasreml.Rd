@@ -65,7 +65,7 @@ hwt.qtl <- gwasreml(hwt.fa2, mapi, merge.by = "Genotype", chr = "2B",
       Trait = "Expt", main.effects = TRUE, n.fa = 0, na.action =
       na.method(x = "include")) 
 
-# Update with additional chromsomes 
+# Update with additional chromosomes 
 
 hwt.qtl2 <- update(hwt.qtl, chr = c("1D","7A"))
 

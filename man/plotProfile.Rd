@@ -40,7 +40,7 @@ plotProfile(object, genObj, chr = names(object$QTL$geno), by.trait =
     equidistant from each other. The default = \code{TRUE}.
 }
   \item{chr.lines}{If \code{TRUE} then plot vertical lines between
-    chromosomes toenhance visual separation. The default is \code{TRUE}.
+    chromosomes to enhance visual separation. The default is \code{TRUE}.
 }
 \item{annotate.peaks}{If \code{TRUE} then annotate putative QTL peaks on
   profiles. The default is \code{TRUE}.
@@ -75,7 +75,7 @@ hwt.qtl <- gwasreml(hwt.fa2, mapi, merge.by = "Genotype", chr = "2B",
            Trait = "Expt", main.effects = TRUE, n.fa = 0, na.action =
            na.method(x = "include"))
 
-# Plot main effct and interaction profiles with QTL peaks annotated.
+# Plot main eeffct and interaction profiles with QTL peaks annotated.
 
 plotProfile(hwt.qtl, mapi, LOD = TRUE, thresh = TRUE, annotate.peaks = TRUE)
 

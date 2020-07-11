@@ -20,15 +20,16 @@ Genome wide multi-environment analysis using ASReml-R V4
 \item{genObj}{a list object containing the genotypic data in the form of
   a \pkg{qtl} \code{"cross"} object (see Details).
 }
- \item{merge.by}{a character string or name of the column(s) in \code{phenoData} and
-   \code{intervalObj} to merge the phenotypic and genotypic data sets.
+ \item{merge.by}{a character string or name of the column(s) in
+   \code{baseModel} phenotypic data \code{genObj} to merge the
+   phenotypic and genotypic data sets.
  }
  \item{Trait}{a character string column name in the phenotypic
        data used in \code{baseModel} to identify to the multiple
        sections of the data (see Details).
 } 
 \item{fix.lines}{a logical value. If \code{TRUE} then lines existing in
-  the phenotype data that do not exist in \code{intervalObj} are fixed and placed in
+  the phenotype data that do not exist in \code{genObj} are fixed and placed in
   the \code{fixed} component of the \code{asreml()} models (see
   Details). It is recommended to set this to TRUE. Defaults to \code{TRUE}.
 }
@@ -67,7 +68,7 @@ Genome wide multi-environment analysis using ASReml-R V4
 \item{trace}{a automatic tracing facility. If \code{trace = TRUE} then
     all \code{asreml} output is piped to the screen during the analysis.
   If \code{trace = "file.txt"}, then output from all asreml models is
-  piped to "\code{file.txt}". Both trace machanisms will display a
+  piped to "\code{file.txt}". Both trace mechanisms will display a
   message if a QTL is detected.
 }
 \item{\dots}{
@@ -122,7 +123,7 @@ example, if \code{n.fa = 2} is set then the models for \code{n.fa = 0}
 and \code{n.fa = 1} are fitted in sequence before the model with
 \code{n.fa = 2}.
 
-When scanning inidividual markers, \code{main.effects = TRUE} will
+When scanning individual markers, \code{main.effects = TRUE} will
 ensure a main marker effect as well as a \code{Trait} by marker
 interaction effect are included in the fixed model. Respecting
 statistical marginality, significant interaction
@@ -164,7 +165,7 @@ interaction peak and removing any significant main effects that fall
 within \code{effects.window}. The final set of putative
 interaction and main effect QTL are then placed as fixed effects and a
 final model is refitted. (Note: these two window arguments have low
-numerical defualts to match a \code{genObj} with centimorgan map
+numerical defaults to match a \code{genObj} with centimorgan map
 units. These would need to be dramatically increased if map units, for
 example, were base-pairs from a physical map.)
 
