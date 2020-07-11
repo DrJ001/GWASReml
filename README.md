@@ -1,3 +1,3 @@
 # GWASReml
 
-Genome wide multi-environemt analysis in incorporating the flexibility of ASReml-R V4.
+Genome wide multi-(environment/treatment/treatment) analysis ncorporating the flexibility of ASReml-R V4.
