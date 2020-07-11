@@ -1,0 +1,30 @@
+##imports
+import(
+stats,
+utils,
+graphics,
+grDevices,
+wgaim,
+qtl,
+pracma,
+ggplot2)
+
+##[exports]
+export(
+constructCM,
+findQTLPeaks,
+getQTL,
+gwasreml.asreml,
+gwasreml.default,
+gwasreml,
+plotProfile,
+summary.gwasreml,
+theme_scatter,
+update.gwasreml)
+
+##[S3 Methods]
+S3method(summary, gwasreml)
+S3method(update, gwasreml)
+S3method(gwasreml, asreml)
+S3method(gwasreml, default)
+
