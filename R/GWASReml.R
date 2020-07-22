@@ -275,7 +275,7 @@ gwasreml.asreml <- function (baseModel, genObj, merge.by = NULL,  Trait = NULL, 
                 attr(genObj, "env") <- cov.env
             }
             else {
-                covObj <- cbind.data.frame(rownames(genoRel), genoRel)
+                covObj <- cbind.data.frame(rownames(genoFin), genoFin)
                 names(covObj)[1] <- merge.by
                 if(is.null(tempModel$call$mbf$ints) & vm){
                     attr(genObj, "env") <- NULL
@@ -301,18 +301,19 @@ gwasreml.asreml <- function (baseModel, genObj, merge.by = NULL,  Trait = NULL, 
         final.terms <- ifelse(peaks$type %in% "Main", peaks$mark, paste(Trait, peaks$mark, sep = ":"))
         final.term <- paste(final.terms, collapse = " + ")
         fix.form <- as.formula(paste(". ~ . + ", final.term, sep = ""))
-        tempModel <- update(tempModel, fixed. = fix.form, data = phenoData, ...)
-    }
+        qtlModel <- update(tempModel, fixed. = fix.form, data = phenoData, ...)
+    } else peaks <- NULL
     qtl.list <- list()
     qtl.list$call <- qtlcall
     qtl.list$Trait <- Trait
     qtl.list$peaks <- peaks
     qtl.list$type <- gen.type
-    qtl.list$exclusion.window
+    qtl.list$qtl.window <- qtl.window
+    qtl.list$effects.window <- effects.window
     qtl.list$geno <- outObj$geno
-    tempModel$QTL <- qtl.list
-    class(tempModel) <- c("gwasreml", "asreml")
-    tempModel
+    qtlModel$QTL <- qtl.list
+    class(qtlModel) <- c("gwasreml", "asreml")
+    qtlModel
 }
 
 update.gwasreml <- function(object, ...){
