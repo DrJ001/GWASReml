@@ -8,10 +8,11 @@ Genome wide multi-environment analysis using ASReml-R V4
 }
 \usage{
 \method{gwasreml}{asreml}(baseModel, genObj, merge.by = NULL,
-       Trait = NULL, fix.lines = TRUE, chr = names(nmar(genObj)),
-       gen.type = "interval", n.fa = 0, main.effects = TRUE, breakout =
-       -1, thresh = "b-corr", TypeI = 0.05, qtl.window = 20,
-       effects.window = 20, trace = TRUE, \ldots)
+       Trait = NULL, covariate = NULL, fix.lines = TRUE, chr =
+       names(nmar(genObj)), gen.type = "interval", n.fa = 0,
+       main.effects = TRUE, breakout = -1, thresh = "b-corr",
+       TypeI = 0.05, qtl.window = 20, effects.window = 20,
+       trace = TRUE, \ldots)
 }
 \arguments{
 \item{baseModel}{a linear mixed model object of class \code{"asreml"} usually representing
@@ -24,10 +25,14 @@ Genome wide multi-environment analysis using ASReml-R V4
    \code{baseModel} phenotypic data \code{genObj} to merge the
    phenotypic and genotypic data sets.
  }
- \item{Trait}{a character string column name in the phenotypic
+\item{Trait}{a character string column name in the phenotypic
        data used in \code{baseModel} to identify to the multiple
        sections of the data (see Details).
-} 
+     }
+\item{covariate}{a character string column name in the phenotypic
+       data used in \code{baseModel} to identify the covariate
+       to be used in the marker scan (see Details).
+}      
 \item{fix.lines}{a logical value. If \code{TRUE} then lines existing in
   the phenotype data that do not exist in \code{genObj} are fixed and placed in
   the \code{fixed} component of the \code{asreml()} models (see
@@ -123,14 +128,16 @@ example, if \code{n.fa = 2} is set then the models for \code{n.fa = 0}
 and \code{n.fa = 1} are fitted in sequence before the model with
 \code{n.fa = 2}.
 
-When scanning individual markers, \code{main.effects = TRUE} will
-ensure a main marker effect as well as a \code{Trait} by marker
-interaction effect are included in the fixed model. Respecting
-statistical marginality, significant interaction
+If \code{covariate = NULL} then when scanning individual markers,
+\code{main.effects = TRUE} will ensure a main marker effect as well as a
+\code{Trait} by marker interaction effect are included in the fixed
+model. Respecting statistical marginality, significant interaction
 effects have precedence over main effects. Consequently, marker main effects are only
 considered statistically significant if the the interaction effects
 are non-significant. If \code{main.effects = FALSE} then only the
-\code{Trait} by marker interaction are included in the fixed model
+\code{Trait} by marker interaction are included in the fixed model.
+If \code{covariate} is non-NULL then the \code{covariate} will replace
+\code{Trait} in the marker scan. 
 
 Both main and interaction Wald/LOD statistic profiles can be
 graphically displayed using \code{plotProfile()}.

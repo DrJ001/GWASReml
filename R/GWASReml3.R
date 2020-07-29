@@ -5,7 +5,7 @@ UseMethod("gwasreml")
 gwasreml.default <- function(baseModel, ...)
     stop("Currently the only supported method is \"asreml\"")
 
-gwasreml.asreml <- function (baseModel, genObj, merge.by = NULL,  Trait = NULL, fix.lines = TRUE, chr = names(nmar(genObj)), gen.type = "interval", n.fa = 0, main.effects = TRUE, breakout = -1, thresh = "b-corr", TypeI = 0.05, qtl.window = 20, effects.window = 20, trace = TRUE, ...)
+gwasreml.asreml <- function (baseModel, genObj, merge.by = NULL, Trait = NULL, covariate = NULL, fix.lines = TRUE, chr = names(nmar(genObj)), gen.type = "interval", n.fa = 0, main.effects = TRUE, breakout = -1, thresh = "b-corr", TypeI = 0.05, qtl.window = 20, effects.window = 20, trace = TRUE, ...)
 {
     qtlcall <- match.call()
     baseObj <- baseModel$QTL
@@ -39,7 +39,6 @@ gwasreml.asreml <- function (baseModel, genObj, merge.by = NULL,  Trait = NULL, 
     if(!is.null(chr) && any(!(chr %in% names(nmar(genObj)))))
         stop("Some chromosome names do not exist inside genObj.")
     if((n.trait <- length(levels(phenoData[, Trait]))) > 2) {
-        print(n.trait)
         n.par.fa <- (n.fa+1)*n.trait - n.fa*(n.fa-1)/2
         n.par.us <- n.trait*(n.trait+1)/2
         if(n.par.fa > n.par.us)
@@ -83,7 +82,6 @@ gwasreml.asreml <- function (baseModel, genObj, merge.by = NULL,  Trait = NULL, 
         cat("\nFixing lines and updating initial base model:\n")
         cat("============================================\n")
         baseModel <- update(baseModel, fixed. = fix.form, random. = ran.base, ...)
-        print(baseModel$call)
         merge.by <- "Gsave"
     }
     if(n.fa > -1){
@@ -108,7 +106,6 @@ gwasreml.asreml <- function (baseModel, genObj, merge.by = NULL,  Trait = NULL, 
         assign("covObj", covObj, envir = parent.frame())
         qtlModel$call$data <- quote(phenoData)
         qtlModel <- update(qtlModel, random. = ran.form, ...)
-        print(qtlModel$call)
         qsp <- strsplit(qterm, ":")
         rhs <- sapply(qsp, "[", 2)
         if(n.fa > 0){
@@ -135,13 +132,14 @@ gwasreml.asreml <- function (baseModel, genObj, merge.by = NULL,  Trait = NULL, 
                     message("\nQTL x ",Trait," Factor Analytic (",i,") Random Effects model.")
                     cat("===================================================\n")
                     qtlModel <- update(qtlModel, random. = ran.form, ...)
-                    print(qtlModel$call)
                 }
             }
         }
     }
     outObj <- list()
     chr <- chr[!(chr %in% names(baseObj$geno))]
+    if(!is.null(covariate))
+            Trait <- covariate
     if(length(chr)){
         for(c in 1:length(chr)){
             tempModel <- qtlModel
@@ -183,7 +181,9 @@ gwasreml.asreml <- function (baseModel, genObj, merge.by = NULL,  Trait = NULL, 
             tempDat <- tempDat[order(tempDat$ord),]
             tempModel$call$data <- quote(tempDat)
             waldObj <- list()
+            asreml.options(Cfixed = TRUE)
             for(i in 1:length(xmark)){
+                pc <- proc.time()
                 tempModel$call$fixed <- qtlModel$call$fixed
                 fix.mark <- paste(Trait, xmark[i], sep = ":")
                 fix.form <- as.formula(paste(". ~ . + ", fix.mark, sep = ""))
@@ -192,16 +192,22 @@ gwasreml.asreml <- function (baseModel, genObj, merge.by = NULL,  Trait = NULL, 
                     fix.form <- as.formula(paste(". ~ . + ", fix.mark, sep = ""))
                 }
                 tempModel <- update(tempModel, fixed. = fix.form, ...)
-                print(tempModel$call$fixed)
-                wtemp <- wald(tempModel)
-                wind <- grep(xmark[i], rownames(wtemp))
-                if(length(wind) > 1){
-                    waldObj$waldm[[i]] <- wtemp[wind[1],c(1,3), drop = FALSE]
-                    waldObj$waldmi[[i]] <- wtemp[wind[2],c(1,3), drop = FALSE]
-                } else {
-                    waldObj$waldmi[[i]] <- wtemp[wind, c(1,3), drop = FALSE]
-                    list.coefs <- tempModel$coefficients$fixed
-                    zind <- grep("X\\.", rownames(list.coefs))
+                list.coefs <- tempModel$coefficients$fixed
+                forw <- paste(Trait,".*", xmark[i], sep = "")
+                reve <- paste(xmark[i],".*", Trait, sep = "")
+                zind <- grep(paste(forw, reve, sep = "|"), rownames(list.coefs))
+                ci <- list.coefs[zind, 1]
+                izero <- list(coef = zind[ci != 0], type = "zero")
+                if(main.effects){
+                    mind <- match(xmark[i], rownames(list.coefs))
+                    mzero <- list(coef = mind, type = "zero")
+                    wt <- waldTest(tempModel, cc = list(izero, mzero))
+                    waldObj$waldm[[i]] <- c(1, wt$Zero[2,1])
+                    waldObj$waldmi[[i]] <- c(length(ci), wt$Zero[1,1])
+                }
+                else {
+                    wt <- waldTest(tempModel, cc = list(izero))
+                    waldObj$waldmi[[i]] <- c(length(ci), wt$Zero[1,1])
                     sub.list <- rev(list.coefs[zind, 1])
                     names(sub.list) <- rev(rownames(list.coefs)[zind])
                     outObj$geno[[chrn]]$coef[[i]] <- sub.list
@@ -209,22 +215,31 @@ gwasreml.asreml <- function (baseModel, genObj, merge.by = NULL,  Trait = NULL, 
                 }
                 if(breakout == i)
                     break
+                pc1 <- proc.time()
+                if(i == 2){
+                    secs <- pc1[3] - pc[3]
+                    sc <- subset(genObj, chr = chr)
+                    nm <- ifelse(gen.type %in% "marker", sum(nmar(sc)), sum(nmar(sc)) - length(nmar(sc)))
+                    message("\nExpected running time is: ", round(nm*secs/60, 2), " minutes.\n")
+                }
             }
             waldObj$waldmi <- do.call("rbind.data.frame", waldObj$waldmi)
-            labs <- "Interaction"
-            if(length(waldObj) > 1){
+            names(waldObj$waldmi) <- c("df","wd")
+            type <- "Interaction"
+            if(main.effects){
                 waldObj$waldm <- do.call("rbind.data.frame", waldObj$waldm)
-                labs <- c("Main",labs)
+                names(waldObj$waldm) <- c("df","wd")
+                type <- c("Main",type)
             }
-            outObj$geno[[chrn]]$wald <- do.call("rbind.data.frame", waldObj)
-            names(outObj$geno[[chrn]]$wald) <- c("df","wd")
-            outObj$geno[[chrn]]$wald$mark <- rep(xmark, length(waldObj))
+            waldObj <- do.call("rbind.data.frame", waldObj)
+            waldObj$mark <- rep(xmark, length(type))
             dist <- genObj$geno[[chrn]]$map
             if ((gen.type == "interval") & (length(dist) > 1))
                 dist <- dist[2:length(dist)] - diff(dist)/2
-            outObj$geno[[chrn]]$wald$dist <- rep(dist, length(waldObj))
-            outObj$geno[[chrn]]$wald$chr <- chrn
-            outObj$geno[[chrn]]$wald$type <- rep(labs, each = length(xmark))
+            waldObj$dist <- rep(dist, length(type))
+            waldObj$chr <- chrn
+            waldObj$type <- rep(type, each = length(xmark))
+            outObj$geno[[chrn]]$wald <- waldObj
             if(!main.effects){
                 outObj$geno[[chrn]]$coef <- t(do.call("cbind", outObj$geno[[chrn]]$coef))
                 outObj$geno[[chrn]]$vcoef <- t(do.call("cbind", outObj$geno[[chrn]]$vcoef))
@@ -298,7 +313,32 @@ gwasreml.asreml <- function (baseModel, genObj, merge.by = NULL,  Trait = NULL, 
         phenoData$ord <- 1:nrow(phenoData)
         phenoData <- merge(phenoData, genoQTL, by = merge.by, all.x = TRUE)
         phenoData <- phenoData[order(phenoData$ord),]
-        final.terms <- ifelse(peaks$type %in% "Main", peaks$mark, paste(Trait, peaks$mark, sep = ":"))
+        message("\nFinal putative QTL x ",Trait," models.")
+        cat("=====================================\n")
+        if(!main.effects){
+            terms.int <- paste(Trait, peaks$mark, sep = ":")
+            final.int <- paste(terms.int, collapse = " + ")
+            final.main <- paste(peaks$mark, collapse = " + ")
+            fix.form <- as.formula(paste(". ~ . ", final.main, final.int, sep = " + "))
+            qtlModel <- update(tempModel, fixed. = fix.form, data = phenoData, ...)
+            list.coefs <- qtlModel$coefficients$fixed
+            peak.test <- list()
+            for(i in 1:nrow(peaks)){
+                forw <- paste(Trait,".*", peaks$mark[i], sep = "")
+                reve <- paste(peaks$mark[i],".*", Trait, sep = "")
+                zind <- grep(paste(forw, reve, sep = "|"), rownames(list.coefs))
+                ci <- list.coefs[zind, 1]
+                peak.test[[i]] <- list(coef = zind[ci != 0], type = "zero")
+            }
+            wt <- waldTest(qtlModel, cc = peak.test)
+            final.terms <- ifelse(wt$Zero[,2] > 0.05, as.character(peaks$mark), terms.int)
+        } else {
+            final.terms <- ifelse(peaks$type %in% "Main", peaks$mark, paste(Trait, peaks$mark, sep = ":"))
+            if(!is.null(covariate)){
+                main.terms <- sapply(strsplit(final.terms, ":"), function(el) el[grep("X\\.", el)])
+                final.terms <- unique(c(main.terms, final.terms))
+            }
+        }
         final.term <- paste(final.terms, collapse = " + ")
         fix.form <- as.formula(paste(". ~ . + ", final.term, sep = ""))
         qtlModel <- update(tempModel, fixed. = fix.form, data = phenoData, ...)
@@ -417,7 +457,6 @@ plotProfile <- function(object, genObj, chr = names(object$QTL$geno), by.trait =
             colnames(zr) <- sapply(strsplit(colnames(el$coef), ":"), "[", 1)
             zr
         })
-        wald
         chrm <- rep(names(object$QTL$geno), times = sapply(zrat, nrow))
         distm <- unlist(lapply(object$QTL$geno, function(el) el$wald$dist))
         markm <- unlist(lapply(object$QTL$geno, function(el) el$wald$mark))
@@ -569,7 +608,7 @@ summary.gwasreml <- function (object, genObj, LOD = TRUE, ...)
     object$QTL$effects <- sapply(enams, function(el) el[grep("X\\.", el)])
     traits <- sapply(enams, function(el){
         if(length(el) > 1) el[-grep("X\\.", el)]
-        else "ALL"
+        else "MAIN"
     })
     prefix <- paste(trait, "_", sep = "")
     traits <- gsub(prefix, "", traits)
@@ -586,4 +625,166 @@ summary.gwasreml <- function (object, genObj, LOD = TRUE, ...)
     qtlm
 }
 
+waldTest.asreml <- function(object, cc, keep.fac = TRUE)
+{
+    if(oldClass(object) != "asreml")
+        stop("Requires an object of class asreml\n")
+    if(is.null(object$Cfixed)) {
+        warning("Requires C matrix from model object. Refitting test model with argument \"Cfixed = T\"\n")
+        asreml.options(Cfixed = TRUE)
+        object <- update(object)
+    }
+    vrb <- object$Cfixed
+    tau <- c(object$coefficients$fixed)
+    names(tau) <- rownames(object$coefficients$fixed)
+    nc <- length(tau)
+    sigma2 <- object$sigma2
+    vrb <- vrb/sigma2
+    ccnams <- names(tau)
+    zdf <- cdf <- NULL
+    cc <- lapply(cc, function(el, ccnams){
+        if(!all(names(el) %in% c("coef","type","comp","group")))
+            stop("Inappropriately named argument for comparison object.")
+        if(is.numeric(el$coef)) {
+            if(max(el$coef) > length(ccnams))
+                stop("coefficient subscript out of bounds")
+            names(el$coef) <- ccnams[el$coef]
+        }
+        else {
+            if(any(is.na(pmatch(el$coef, ccnams))))
+                  stop("Names in contrast do not match the names of coefficients of object")
+            temp <- pmatch(el$coef, ccnams)
+            names(temp) <- el$coef
+            el$coef <- temp
+        }
+        el
+    }, ccnams)
+   ## split contrasts and other available tests
+    ctype <- unlist(lapply(cc, function(el) el$type))
+    if(!all(ctype %in% c("con","zero")))
+        stop("Contrast types must be either \"con\" for treatment comparisons or \"zero\" for testing zero equality")
+    cons <- cc[ctype %in% "con"]
+    zero <- cc[ctype %in% "zero"]
+    cse <- ctau <- zwtest <- cwtest <- zpval <- c()
+    if(length(cons)) {
+       CRows <- lapply(cons, function(el, nc){
+           if(length(el) < 3){
+               con <- contr.helmert(length(el$coef))[, (length(el$coef) - 1)]
+               names(con) <- cnam <- names(el$coef)
+               cat("Warning: default contrast being taken for", cnam, "is", con, "\n")
+               row <- rep(0, nc)
+               row[el$coef] <- con
+               row
+           }
+           else {
+               if(is.matrix(el$comp)) {
+                   if(length(el$coef) != ncol(el$comp))
+                       stop("Length of contrast does not match the number of specified coefficients")
+                   cons <- split(el$comp, 1:nrow(el$comp))
+                   rows <- lapply(cons, function(ell, first = el$coef, nc){
+                       row <- rep(0, nc)
+                       row[first] <- ell
+                       row
+                   }, first = el$coef, nc)
+                   rows <- unlist(rows, use.names = F)
+                   matrix(rows, nrow = nrow(el$comp), byrow = T)
+               }
+               else {
+                   if(length(el$coef) != length(el$comp))
+                       stop("Length of contrast does not match the number of specified coefficients")
+                   row <- rep(0, nc)
+                   row[el$coef] <- el$comp
+                   row
+               }
+           }
+       }, nc)
+       Cmat <- do.call("rbind", CRows)
+       if(!keep.fac)
+           ccnams <- substring(ccnams, regexpr("\\_", ccnams) + 1, nchar(ccnams))
+       cnam <- lapply(split(Cmat, 1:nrow(Cmat)), function(el, ccnams){
+           namr <- ccnams[ifelse(el < 0, T, F)]
+           naml <- ccnams[ifelse(el > 0, T, F)]
+           c(paste(naml, collapse = ":"), paste(namr, collapse = ":"))
+       }, ccnams)
+       Cnam <- do.call("rbind", cnam)
+       gnams <- lapply(cons, function(el){
+           if(!is.null(el$group)){
+               if(!any(names(el$group) %in% c("left","right")))
+                   stop("group names must be \"left\" and \"right\".")
+               if(is.null(el$group$left)){
+                   if(is.matrix(el$comp))
+                       el$group$left <- rep(NA, nrow(el$comp))
+                   else el$group$left <- NA
+               } else {
+                   if(is.matrix(el$comp)){
+                       if(length(el$group$left) == 1)
+                           el$group$left <- rep(el$group$left, nrow(el$comp))
+                       if(length(el$group$left) != nrow(el$comp))
+                          stop("No. of group names do not match the number of comparisons in object")
+                   }
+               }
+                if(is.null(el$group$right)){
+                   if(is.matrix(el$comp))
+                       el$group$right <- rep(NA, nrow(el$comp))
+                   else el$group$right <- NA
+               } else {
+                   if(is.matrix(el$comp)) {
+                       if(length(el$group$right) == 1)
+                           el$group$right <- rep(el$group$right, nrow(el$comp))
+                       if(length(el$group$right) != nrow(el$comp))
+                          stop("No. of group names do not match the number of comparisons in object")
+                   }
+               }
+           } else {
+               if(is.matrix(el$comp))
+                   el$group$left <- el$group$right <- rep(NA, nrow(el$comp))
+               else el$group$left <- el$group$right <- NA
+           }
+           cbind(el$group$left, el$group$right)
+       })
+       Gnam <- do.call("rbind", gnams)
+       Cnam[!is.na(Gnam[,1]), 1] <- Gnam[!is.na(Gnam[,1]),1]
+       Cnam[!is.na(Gnam[,2]), 2] <- Gnam[!is.na(Gnam[,2]),2]
+       for(i in 1:nrow(Cmat)) {
+           varmat <- sum(Cmat[i,  ]*crossprod(vrb, t(Cmat)[, i]))
+           cse[i] <- sqrt(varmat * sigma2)
+           ctau[i] <- sum(Cmat[i,  ]*tau)
+           cwtest[i] <- (ctau[i]/cse[i])^2
+       }
+       cdf <- data.frame(wald = round(cwtest, 6), pval = round(1 - pchisq(cwtest, 1), 6),
+                         coef = round(ctau, 6), se = round(cse, 6))
+       attr(cdf, "names") <- c("Wald Statistic", "P-Value", "Cont. Coef.", "Std. Error")
+       attr(cdf, "row.names") <- paste(Cnam[,1], Cnam[,2],  sep = " vs ")
+       oldClass(cdf) <- "data.frame"
+   }
+      if(length(zero)) {
+        ZRows <- lapply(zero, function(el, nc){
+            rows <- rep(rep(0, nc), length(el$coef))
+            dum <- seq(0, (length(el$coef) - 1) * nc, by = nc)
+            rows[el$coef + dum] <- 1
+            matrix(rows, nrow = length(el$coef), byrow = T)
+        }, nc)
+        znam <- unlist(lapply(zero, function(el, ccnams) {
+            if(is.null(el$group))
+                paste(ccnams[el$coef], collapse = ":")
+            else el$group
+            }, ccnams))
+        if(any(table(znam) > 1))
+            stop("Duplicate names in group structures for zero equality tests.")
+        for(i in 1:length(ZRows)) {
+            varmat <- ZRows[[i]] %*% crossprod(vrb, t(ZRows[[i]]))
+            Ctau <- ZRows[[i]] %*% tau
+            zwtest[i] <- sum(Ctau*crossprod(solve(varmat), Ctau))/sigma2
+            zpval[i] <- 1 - pchisq(zwtest[i], nrow(ZRows[[i]]))
+        }
+        zdf <- data.frame(wald = round(zwtest, 6), pval = round(zpval, 6))
+        attr(zdf, "names") <- c("Wald Statistic", "P-Value")
+        attr(zdf, "row.names") <- znam
+        oldClass(zdf) <- "data.frame"
+      }
+    res <- list(Contrasts = cdf, Zero = zdf)
+    invisible(res)
+}
 
+waldTest <- function(object, ...)
+    UseMethod("waldTest")

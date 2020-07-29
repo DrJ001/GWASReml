@@ -1,6 +1,8 @@
 \name{wgaim-internal}
 \alias{constructCM}
 \alias{getQTL}
+\alias{waldTest}
+\alias{waldTest.asreml}
 \alias{gwasreml.default}
 \alias{findQTLPeaks}
 \alias{theme_scatter}
@@ -12,6 +14,8 @@ directly called by the user.
 \usage{
 constructCM(genoData, scale.method = "diag")
 getQTL(object, genObj)
+waldTest(object, \ldots)
+\method{waldTest}{asreml}(object, cc, keep.fac = TRUE)
 findQTLPeaks(wald, qtl.exc, eff.exc)
 theme_scatter(base_size = 11, base_family = "")
 \method{gwasreml}{default}(baseModel, \ldots)
