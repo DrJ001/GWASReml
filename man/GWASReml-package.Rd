@@ -65,5 +65,5 @@ Maintainer: Julian Taylor <julian.taylor@adelaide.edu.au>
 }
 \keyword{package}
 \seealso{
-\code{\link{qtl-package}},\code{\link{wgaim-package}} 
+\code{\link{qtl-package}} 
 }

@@ -4,7 +4,6 @@ stats,
 utils,
 graphics,
 grDevices,
-wgaim,
 qtl,
 pracma,
 ggplot2)

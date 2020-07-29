@@ -1,8 +1,8 @@
 Package: GWASReml
 Type: Package
 Title: Genome-wide QTL/Association analysis using ASReml-R V4
-Version: 1.0-1
-Date: 2020-07-22
+Version: 1.0-2
+Date: 2020-07-29
 Author: Julian Taylor <julian.taylor@adelaide.edu.au>
 Maintainer: Julian Taylor <julian.taylor@adelaide.edu.au>
 Depends: R (>= 3.0.0), qtl
