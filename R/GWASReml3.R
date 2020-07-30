@@ -771,6 +771,8 @@ waldTest.asreml <- function(object, cc, keep.fac = TRUE)
             }, ccnams))
         if(any(table(znam) > 1))
             stop("Duplicate names in group structures for zero equality tests.")
+        print(Zrows)
+        print(vrb)  
         for(i in 1:length(ZRows)) {
             varmat <- ZRows[[i]] %*% crossprod(vrb, t(ZRows[[i]]))
             Ctau <- ZRows[[i]] %*% tau
