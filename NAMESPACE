@@ -19,11 +19,14 @@ gwasreml,
 plotProfile,
 summary.gwasreml,
 theme_scatter,
-update.gwasreml)
+update.gwasreml
+waldTest
+waldTest.asreml)
 
 ##[S3 Methods]
 S3method(summary, gwasreml)
 S3method(update, gwasreml)
 S3method(gwasreml, asreml)
 S3method(gwasreml, default)
+S3method(waldTest, asreml)
 
