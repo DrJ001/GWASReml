@@ -634,7 +634,7 @@ waldTest.asreml <- function(object, cc, keep.fac = TRUE)
         asreml.options(Cfixed = TRUE)
         object <- update(object)
     }
-    vrb <- object$Cfixed
+    vrb <- as.matrix(object$Cfixed)
     tau <- c(object$coefficients$fixed)
     names(tau) <- rownames(object$coefficients$fixed)
     nc <- length(tau)
