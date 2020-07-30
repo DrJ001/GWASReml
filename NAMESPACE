@@ -19,8 +19,8 @@ gwasreml,
 plotProfile,
 summary.gwasreml,
 theme_scatter,
-update.gwasreml
-waldTest
+update.gwasreml,
+waldTest,
 waldTest.asreml)
 
 ##[S3 Methods]
