@@ -601,10 +601,11 @@ summary.gwasreml <- function (object, genObj, LOD = TRUE, ...)
     trait <- object$QTL$Trait
     coefs <- object$coefficients$fixed
     inds <- grep("X\\.", rownames(coefs))
-    coefs <- coefs[inds,]
+    cfs <- coefs[inds,]
+    names(cfs) <- rownames(coefs)[ind]
     vcoef <- object$vcoeff$fixed[inds]
-    zrat <- coefs/sqrt(vcoef)
-    enams <- strsplit(names(coefs), ":")
+    zrat <- cfs/sqrt(vcoef)
+    enams <- strsplit(names(cfs), ":")
     object$QTL$effects <- sapply(enams, function(el) el[grep("X\\.", el)])
     traits <- sapply(enams, function(el){
         if(length(el) > 1) el[-grep("X\\.", el)]
@@ -617,7 +618,7 @@ summary.gwasreml <- function (object, genObj, LOD = TRUE, ...)
         names(qtlm) <- c("Chromosome", "Interval", "Left Marker", "dist(cM)", "Right Marker", "dist(cM)")
     else names(qtlm) <- c("Chromosome", "Interval", "Marker", "dist(cM)")
     qtlm <- cbind.data.frame(Env = traits, qtlm)
-    qtlm$Size <- round(coefs, 4)
+    qtlm$Size <- round(cfs, 4)
     qtlm$Pvalue <- round(2 * (1 - pnorm(abs(zrat))), 4)
     if(LOD) qtlm$LOD <- round(0.5*log(exp(zrat^2), base = 10), 4)
     nints <- as.numeric(as.character(qtlm$Interval))
