@@ -602,7 +602,7 @@ summary.gwasreml <- function (object, genObj, LOD = TRUE, ...)
     coefs <- object$coefficients$fixed
     inds <- grep("X\\.", rownames(coefs))
     cfs <- coefs[inds,]
-    names(cfs) <- rownames(coefs)[ind]
+    names(cfs) <- rownames(coefs)[inds]
     vcoef <- object$vcoeff$fixed[inds]
     zrat <- cfs/sqrt(vcoef)
     enams <- strsplit(names(cfs), ":")
