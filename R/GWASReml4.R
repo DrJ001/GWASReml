@@ -618,10 +618,11 @@ summary.gwasreml <- function (object, genObj, LOD = TRUE, ...)
     trait <- object$QTL$Trait
     coefs <- object$coefficients$fixed
     inds <- grep("X\\.", rownames(coefs))
+    nams <- rownames(coefs)[inds]
     coefs <- coefs[inds,]
     vcoef <- object$vcoeff$fixed[inds]
     zrat <- coefs/sqrt(vcoef)
-    enams <- strsplit(names(coefs), ":")
+    enams <- strsplit(nams, ":")
     object$QTL$effects <- sapply(enams, function(el) el[grep("X\\.", el)])
     traits <- sapply(enams, function(el){
         if(length(el) > 1) el[-grep("X\\.", el)]
