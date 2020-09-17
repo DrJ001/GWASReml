@@ -42,6 +42,7 @@ gwasreml.asreml <- function (baseModel, genObj, merge.by = NULL, Trait = NULL, c
                 stop('n.fa set too high: reset and try again\n')
         }
         lhs <- paste("diag(", Trait, ")", sep = "")
+        lab <- paste(" x ", Trait, sep = "")
     } else {
         if(n.fa > 0){
             stop("Number of factors cannot be gretaer zero when thre is no Trait. Setting n.fa = 0.")
@@ -49,6 +50,7 @@ gwasreml.asreml <- function (baseModel, genObj, merge.by = NULL, Trait = NULL, c
         }
         lhs <- NULL
         main.effects <- FALSE
+        lab <- NULL
     }
     if(!is.null(chr) && any(!(chr %in% names(nmar(genObj)))))
         stop("Some chromosome names do not exist inside genObj.")
@@ -94,7 +96,7 @@ gwasreml.asreml <- function (baseModel, genObj, merge.by = NULL, Trait = NULL, c
         merge.by <- "Gsave"
     }
     if(n.fa > -1){
-        message("\nQTL x ",Trait," Diagonal Random effects model.")
+        message("\nQTL",lab," Diagonal Random effects model.")
         cat("========================================\n")
         qtlModel <- baseModel
         if(ncol(genoData) > nrow(genoData)){
@@ -320,7 +322,7 @@ gwasreml.asreml <- function (baseModel, genObj, merge.by = NULL, Trait = NULL, c
         phenoData$ord <- 1:nrow(phenoData)
         phenoData <- merge(phenoData, genoQTL, by = merge.by, all.x = TRUE)
         phenoData <- phenoData[order(phenoData$ord),]
-        message("\nFinal putative QTL x ",Trait," models.")
+        message("\nFinal putative QTL",lab," model.")
         cat("=====================================\n")
         if(!main.effects){
             if(!is.null(Trait)){
@@ -340,6 +342,7 @@ gwasreml.asreml <- function (baseModel, genObj, merge.by = NULL, Trait = NULL, c
                 }
                 wt <- waldTest(qtlModel, cc = peak.test)
                 final.terms <- ifelse(wt$Zero[,2] > 0.05, as.character(peaks$mark), terms.int)
+
             } else final.terms <- as.character(peaks$mark)
         } else {
             final.terms <- ifelse(peaks$type %in% "Main", peaks$mark, paste(Trait, peaks$mark, sep = ":"))
