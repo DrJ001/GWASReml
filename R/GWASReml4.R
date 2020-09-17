@@ -34,16 +34,25 @@ gwasreml.asreml <- function (baseModel, genObj, merge.by = NULL, Trait = NULL, c
              merge.by, "\" column.")
     if(!is.numeric(breakout) | breakout < -1 | breakout == 0)
         stop("breakout argument must be -1 or a positive integer.")
-    if(is.null(Trait))
-        stop("Trait needs to be non-NULL.")
+    if(!is.null(Trait)){
+        if((n.trait <- length(levels(phenoData[, Trait]))) > 2) {
+            n.par.fa <- (n.fa+1)*n.trait - n.fa*(n.fa-1)/2
+            n.par.us <- n.trait*(n.trait+1)/2
+            if(n.par.fa > n.par.us)
+                stop('n.fa set too high: reset and try again\n')
+        }
+        lhs <- paste("diag(", Trait, ")", sep = "")
+    } else {
+        if(n.fa > 0){
+            stop("Number of factors cannot be gretaer zero when thre is no Trait. Setting n.fa = 0.")
+            n.fa <- 0
+        }
+        lhs <- NULL
+        main.effects <- FALSE
+    }
     if(!is.null(chr) && any(!(chr %in% names(nmar(genObj)))))
         stop("Some chromosome names do not exist inside genObj.")
-    if((n.trait <- length(levels(phenoData[, Trait]))) > 2) {
-        n.par.fa <- (n.fa+1)*n.trait - n.fa*(n.fa-1)/2
-        n.par.us <- n.trait*(n.trait+1)/2
-        if(n.par.fa > n.par.us)
-            stop('n.fa set too high: reset and try again\n')
-    }
+
     if (is.character(trace)) {
         ftrace <- file(trace, "w")
         sink(trace, type = "output", append = FALSE)
@@ -75,7 +84,7 @@ gwasreml.asreml <- function (baseModel, genObj, merge.by = NULL, Trait = NULL, c
         phenoData$Gomit <- phenoData$Gsave <- plines
         levels(phenoData$Gsave)[!whg] <- NA
         levels(phenoData$Gomit)[whg] <- "GEN"
-        fix.form <- as.formula(paste(". ~ ", paste(Trait, "Gomit", sep = ":")," + .", sep = ""))
+        fix.form <- as.formula(paste(". ~ ", pasteT(Trait, "Gomit")," + .", sep = ""))
         pterm <- gsub(merge.by, "Gsave", pterm)
         ran.base <- formula(paste("~ ", paste(c(pterm, rterms), collapse = " + "), sep = ""))
         baseModel$call$data <- quote(phenoData)
@@ -91,7 +100,7 @@ gwasreml.asreml <- function (baseModel, genObj, merge.by = NULL, Trait = NULL, c
         if(ncol(genoData) > nrow(genoData)){
             cov.env <- constructCM(genoData)
             covObj <- cov.env$relm
-            qterm <- paste("vm","(",merge.by,", covObj):","diag(", Trait, ")", sep = "")
+            qterm <- pasteT(lhs, paste("vm","(",merge.by,", covObj)", sep = ""))
             ran.form <- as.formula(paste(c("~", qterm, pterm, rterms), collapse = " + "))
             attr(genObj, "env") <- cov.env
             vm <- TRUE
@@ -100,18 +109,18 @@ gwasreml.asreml <- function (baseModel, genObj, merge.by = NULL, Trait = NULL, c
             names(covObj)[1] <- merge.by
             qtlModel$call$mbf$ints$key <- rep(merge.by, 2)
             qtlModel$call$mbf$ints$cov <- "covObj"
-            qterm <- paste("mbf('ints'):", "diag(", Trait, ")", sep = "")
+            qterm <- pasteT(lhs, paste("mbf('ints')", sep = ""))
             ran.form <- as.formula(paste(c("~", qterm, pterm, rterms), collapse = " + "))
         }
         assign("covObj", covObj, envir = parent.frame())
         qtlModel$call$data <- quote(phenoData)
         qtlModel <- update(qtlModel, random. = ran.form, ...)
-        qsp <- strsplit(qterm, ":")
-        rhs <- sapply(qsp, "[", 2)
         if(n.fa > 0){
+            qsp <- strsplit(qterm, ":")
+#            lhs <- sapply(qsp, "[", 1)
             if(n.trait == 2){
-                rhs <- gsub("diag", "us", rhs)
-                qterm <- paste(sapply(qsp, "[", 1), rhs, sep = ":")
+                lhs <- gsub("diag", "us", lhs)
+                qterm <- paste(lhs, sapply(qsp, "[", 2), sep = ":")
                 ran.form <- as.formula(paste(c("~", qterm, pterm, rterms), collapse = " + "))
                 message("\nQTL x ",Trait," Bivariate Random Effects model.")
                 cat("===============================================\n")
@@ -119,15 +128,15 @@ gwasreml.asreml <- function (baseModel, genObj, merge.by = NULL, Trait = NULL, c
             }
             else {
                 for(i in 1:n.fa){
-                    if(length(grep("diag", rhs))){
-                        rhs <- gsub("diag", "fa", rhs)
-                        rhs <- gsub(")", ",1)", rhs)
+                    if(length(grep("diag", lhs))){
+                        lhs <- gsub("diag", "fa", lhs)
+                        lhs <- gsub(")", ",1)", lhs)
                     } else {
                         old <- paste(i - 1, ")", sep = "")
                         new <- paste(i, ")", sep = "")
-                        rhs <- gsub(old, new, rhs)
+                        lhs <- gsub(old, new, lhs)
                     }
-                    qterm <- paste(sapply(qsp, "[", 1), rhs, sep = ":")
+                    qterm <- paste(lhs, sapply(qsp, "[", 2), sep = ":")
                     ran.form <- as.formula(paste(c("~", qterm, pterm, rterms), collapse = " + "))
                     message("\nQTL x ",Trait," Factor Analytic (",i,") Random Effects model.")
                     cat("===================================================\n")
@@ -138,8 +147,10 @@ gwasreml.asreml <- function (baseModel, genObj, merge.by = NULL, Trait = NULL, c
     }
     outObj <- list()
     chr <- chr[!(chr %in% names(baseObj$geno))]
-    if(!is.null(covariate))
-            Trait <- covariate
+    if(!is.null(covariate)){
+        Trait <- covariate
+        main.effects <- TRUE
+    }
     if(length(chr)){
         for(c in 1:length(chr)){
             tempModel <- qtlModel
@@ -160,9 +171,7 @@ gwasreml.asreml <- function (baseModel, genObj, merge.by = NULL, Trait = NULL, c
                         attr(genObj, "env") <- NULL
                         rterms <- unlist(strsplit(deparse(tempModel$call$random[[2]], width.cutoff = 500), " \\+ "))
                         rterms <- rterms[!(rterms %in% qterm)]
-                        qsp <- strsplit(qterm, ":")
-                        rhs <- sapply(qsp, "[", 2)
-                        qterm <- paste(c("mbf","(",merge.by,", covObj):", rhs), sep = "")
+                        qterm <- pasteT(lhs, paste("mbf","(",merge.by,", covObj)", sep = ""))
                         tempModel$call$mbf$ints$key <- rep(merge.by, 2)
                         tempModel$call$mbf$ints$cov <- "covObj"
                         ran.form <- as.formula(paste(c("~ ", qterm, rterms), collapse = " + "))
@@ -185,7 +194,7 @@ gwasreml.asreml <- function (baseModel, genObj, merge.by = NULL, Trait = NULL, c
             for(i in 1:length(xmark)){
                 pc <- proc.time()
                 tempModel$call$fixed <- qtlModel$call$fixed
-                fix.mark <- paste(Trait, xmark[i], sep = ":")
+                fix.mark <- pasteT(Trait, xmark[i])
                 fix.form <- as.formula(paste(". ~ . + ", fix.mark, sep = ""))
                 if(main.effects){
                     fix.mark <- paste(xmark[i], fix.mark, sep = "+")
@@ -296,9 +305,7 @@ gwasreml.asreml <- function (baseModel, genObj, merge.by = NULL, Trait = NULL, c
                     attr(genObj, "env") <- NULL
                     rterms <- unlist(strsplit(deparse(tempModel$call$random[[2]], width.cutoff = 500), " \\+ "))
                     rterms <- rterms[!(rterms %in% qterm)]
-                    qsp <- strsplit(qterm, ":")
-                    rhs <- sapply(qsp, "[", 2)
-                    qterm <- paste(c("mbf","(",merge.by,", covObj):", rhs), sep = "")
+                    qterm <- pasteT(lhs, paste("mbf","(",merge.by,", covObj)", sep = ""))
                     tempModel$call$mbf$ints$key <- rep(merge.by, 2)
                     tempModel$call$mbf$ints$cov <- "covObj"
                     ran.form <- as.formula(paste(c("~ ", qterm, rterms), collapse = " + "))
@@ -316,22 +323,24 @@ gwasreml.asreml <- function (baseModel, genObj, merge.by = NULL, Trait = NULL, c
         message("\nFinal putative QTL x ",Trait," models.")
         cat("=====================================\n")
         if(!main.effects){
-            terms.int <- paste(Trait, peaks$mark, sep = ":")
-            final.int <- paste(terms.int, collapse = " + ")
-            final.main <- paste(peaks$mark, collapse = " + ")
-            fix.form <- as.formula(paste(". ~ . ", final.main, final.int, sep = " + "))
-            qtlModel <- update(tempModel, fixed. = fix.form, data = phenoData, ...)
-            list.coefs <- qtlModel$coefficients$fixed
-            peak.test <- list()
-            for(i in 1:nrow(peaks)){
-                forw <- paste(Trait,".*", peaks$mark[i], sep = "")
-                reve <- paste(peaks$mark[i],".*", Trait, sep = "")
-                zind <- grep(paste(forw, reve, sep = "|"), rownames(list.coefs))
-                ci <- list.coefs[zind, 1]
-                peak.test[[i]] <- list(coef = zind[ci != 0], type = "zero")
-            }
-            wt <- waldTest(qtlModel, cc = peak.test)
-            final.terms <- ifelse(wt$Zero[,2] > 0.05, as.character(peaks$mark), terms.int)
+            if(!is.null(Trait)){
+                terms.int <- paste(Trait, peaks$mark, sep = ":")
+                final.int <- paste(terms.int, collapse = " + ")
+                final.main <- paste(peaks$mark, collapse = " + ")
+                fix.form <- as.formula(paste(". ~ . ", final.main, final.int, sep = " + "))
+                qtlModel <- update(tempModel, fixed. = fix.form, data = phenoData, ...)
+                list.coefs <- qtlModel$coefficients$fixed
+                peak.test <- list()
+                for(i in 1:nrow(peaks)){
+                    forw <- paste(Trait,".*", peaks$mark[i], sep = "")
+                    reve <- paste(peaks$mark[i],".*", Trait, sep = "")
+                    zind <- grep(paste(forw, reve, sep = "|"), rownames(list.coefs))
+                    ci <- list.coefs[zind, 1]
+                    peak.test[[i]] <- list(coef = zind[ci != 0], type = "zero")
+                }
+                wt <- waldTest(qtlModel, cc = peak.test)
+                final.terms <- ifelse(wt$Zero[,2] > 0.05, as.character(peaks$mark), terms.int)
+            } else final.terms <- as.character(peaks$mark)
         } else {
             final.terms <- ifelse(peaks$type %in% "Main", peaks$mark, paste(Trait, peaks$mark, sep = ":"))
             if(!is.null(covariate)){
@@ -354,6 +363,11 @@ gwasreml.asreml <- function (baseModel, genObj, merge.by = NULL, Trait = NULL, c
     qtlModel$QTL <- qtl.list
     class(qtlModel) <- c("gwasreml", "asreml")
     qtlModel
+}
+
+pasteT <- function(lhs, rhs){
+    if(is.null(lhs)) rhs
+    else paste(lhs, rhs, sep = ":")
 }
 
 update.gwasreml <- function(object, ...){
@@ -601,11 +615,10 @@ summary.gwasreml <- function (object, genObj, LOD = TRUE, ...)
     trait <- object$QTL$Trait
     coefs <- object$coefficients$fixed
     inds <- grep("X\\.", rownames(coefs))
-    cfs <- coefs[inds,]
-    names(cfs) <- rownames(coefs)[inds]
+    coefs <- coefs[inds,]
     vcoef <- object$vcoeff$fixed[inds]
-    zrat <- cfs/sqrt(vcoef)
-    enams <- strsplit(names(cfs), ":")
+    zrat <- coefs/sqrt(vcoef)
+    enams <- strsplit(names(coefs), ":")
     object$QTL$effects <- sapply(enams, function(el) el[grep("X\\.", el)])
     traits <- sapply(enams, function(el){
         if(length(el) > 1) el[-grep("X\\.", el)]
@@ -618,7 +631,7 @@ summary.gwasreml <- function (object, genObj, LOD = TRUE, ...)
         names(qtlm) <- c("Chromosome", "Interval", "Left Marker", "dist(cM)", "Right Marker", "dist(cM)")
     else names(qtlm) <- c("Chromosome", "Interval", "Marker", "dist(cM)")
     qtlm <- cbind.data.frame(Env = traits, qtlm)
-    qtlm$Size <- round(cfs, 4)
+    qtlm$Size <- round(coefs, 4)
     qtlm$Pvalue <- round(2 * (1 - pnorm(abs(zrat))), 4)
     if(LOD) qtlm$LOD <- round(0.5*log(exp(zrat^2), base = 10), 4)
     nints <- as.numeric(as.character(qtlm$Interval))

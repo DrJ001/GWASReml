@@ -12,6 +12,7 @@ These are internal \code{gwasreml} functions that are not intended to be
 directly called by the user.
 }
 \usage{
+pasteT(lhs, rhs)
 constructCM(genoData, scale.method = "diag")
 getQTL(object, genObj)
 waldTest(object, \ldots)

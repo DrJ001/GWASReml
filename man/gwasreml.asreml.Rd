@@ -95,7 +95,11 @@ The \code{Trait} argument is used as a placeholder for potentially
 different types of sectioning in the data. For example, \code{Trait} may
 be the column factor describing different experiments or
 environments. It may also be the column factor partitioning multiple
-measurements of the same experimental unit.
+measurements of the same experimental unit. If \code{Trait} is set to
+\code{NULL} then the function assumes there is no sectioning of the
+data. If this is true then \code{n.fa = 0} and \code{main.effects =
+  FALSE} should also be set. If they are not then they are set by the
+function.
 
 It is recommended to set \code{fix.lines = TRUE} to ensure additive and
 non-additive genetic variances are estimated from lines in the
@@ -133,7 +137,7 @@ If \code{covariate = NULL} then when scanning individual markers,
 \code{Trait} by marker interaction effect are included in the fixed
 model. Respecting statistical marginality, significant interaction
 effects have precedence over main effects. Consequently, marker main effects are only
-considered statistically significant if the the interaction effects
+considered statistically significant if the interaction effects
 are non-significant. If \code{main.effects = FALSE} then only the
 \code{Trait} by marker interaction are included in the fixed model.
 If \code{covariate} is non-NULL then the \code{covariate} will replace

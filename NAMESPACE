@@ -10,6 +10,7 @@ ggplot2)
 
 ##[exports]
 export(
+pasteT,
 constructCM,
 findQTLPeaks,
 getQTL,
