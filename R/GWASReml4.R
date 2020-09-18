@@ -43,6 +43,7 @@ gwasreml.asreml <- function (baseModel, genObj, merge.by = NULL, Trait = NULL, c
         }
         lhs <- paste("diag(", Trait, ")", sep = "")
         lab <- paste(" x ", Trait, sep = "")
+        section <- TRUE
     } else {
         if(n.fa > 0){
             stop("Number of factors cannot be gretaer zero when thre is no Trait. Setting n.fa = 0.")
@@ -51,6 +52,7 @@ gwasreml.asreml <- function (baseModel, genObj, merge.by = NULL, Trait = NULL, c
         lhs <- NULL
         main.effects <- FALSE
         lab <- NULL
+        section <- FALSE
     }
     if(!is.null(chr) && any(!(chr %in% names(nmar(genObj)))))
         stop("Some chromosome names do not exist inside genObj.")
@@ -251,9 +253,16 @@ gwasreml.asreml <- function (baseModel, genObj, merge.by = NULL, Trait = NULL, c
             waldObj$chr <- chrn
             waldObj$type <- rep(type, each = length(xmark))
             outObj$geno[[chrn]]$wald <- waldObj
+            print(outObj$geno[[chrn]]$coef)
             if(!main.effects){
-                outObj$geno[[chrn]]$coef <- t(do.call("cbind", outObj$geno[[chrn]]$coef))
-                outObj$geno[[chrn]]$vcoef <- t(do.call("cbind", outObj$geno[[chrn]]$vcoef))
+                if(!is.null(Trait)){
+                    outObj$geno[[chrn]]$coef <- t(do.call("cbind", outObj$geno[[chrn]]$coef))
+                    outObj$geno[[chrn]]$vcoef <- t(do.call("cbind", outObj$geno[[chrn]]$vcoef))
+                } else {
+                    outObj$geno[[chrn]]$coef <- matrix(outObj$geno[[chrn]]$coef, ncol = 1)
+                    colnames(outObj$geno[[chrn]]$coef) <- "Expt"
+                    outObj$geno[[chrn]]$vcoef <- matrix(outObj$geno[[chrn]]$vcoef, ncol = 1)
+                }
             }
         }
     }
@@ -358,6 +367,7 @@ gwasreml.asreml <- function (baseModel, genObj, merge.by = NULL, Trait = NULL, c
     qtl.list <- list()
     qtl.list$call <- qtlcall
     qtl.list$Trait <- Trait
+    qtl.list$section <- section
     qtl.list$peaks <- peaks
     qtl.list$type <- gen.type
     qtl.list$qtl.window <- qtl.window
@@ -470,7 +480,8 @@ plotProfile <- function(object, genObj, chr = names(object$QTL$geno), by.trait =
         if(is.null(object$QTL$geno[[1]]$coef))
             stop("Marker effects can only be estimated if main.effects = FALSE is set.")
         zrat <- lapply(object$QTL$geno, function(el){
-            zr <- (el$coef^2)/el$vcoef
+            sigma2 <- ifelse(object$QTL$section, 1, object$sigma2)
+            zr <- (el$coef^2)/el$vcoef*sigma2
             colnames(zr) <- sapply(strsplit(colnames(el$coef), ":"), "[", 1)
             zr
         })
@@ -621,7 +632,8 @@ summary.gwasreml <- function (object, genObj, LOD = TRUE, ...)
     nams <- rownames(coefs)[inds]
     coefs <- coefs[inds,]
     vcoef <- object$vcoeff$fixed[inds]
-    zrat <- coefs/sqrt(vcoef)
+    sigma2 <- ifelse(object$QTL$section, 1, object$sigma2)
+    zrat <- coefs/sqrt(vcoef*sigma2)
     enams <- strsplit(nams, ":")
     object$QTL$effects <- sapply(enams, function(el) el[grep("X\\.", el)])
     traits <- sapply(enams, function(el){
