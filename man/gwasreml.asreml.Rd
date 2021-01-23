@@ -1,16 +1,16 @@
 \name{gwasreml.asreml}
 \alias{gwasreml.asreml}
 \alias{gwasreml}
-\title{Genome wide multi-environment analysis using ASReml-R V4
+\title{Genome wide single multi-environment analysis using ASReml-R V4
 }
 \description{
-Genome wide multi-environment analysis using ASReml-R V4  
+Genome wide single and multi-environment analysis using ASReml-R V4  
 }
 \usage{
 \method{gwasreml}{asreml}(baseModel, genObj, merge.by = NULL,
-       Trait = NULL, covariate = NULL, fix.lines = TRUE, chr =
-       names(nmar(genObj)), gen.type = "interval", n.fa = 0,
-       main.effects = TRUE, breakout = -1, thresh = "b-corr",
+       Trait = NULL, covariate = NULL, type = "main+int",
+       fix.lines = TRUE, chr = names(nmar(genObj)), gen.type =
+       "interval", n.fa = 0, breakout = -1, thresh = "b-corr",
        TypeI = 0.05, qtl.window = 20, effects.window = 20,
        trace = TRUE, \ldots)
 }
@@ -32,6 +32,12 @@ Genome wide multi-environment analysis using ASReml-R V4
 \item{covariate}{a character string column name in the phenotypic
        data used in \code{baseModel} to identify the covariate
        to be used in the marker scan (see Details).
+}
+\item{type}{a character string namng the type of fixed effects to
+  be fitted when individually scanning markers/intervals. Types are \code{"main"}
+  for main effects only, \code{"int"} for interaction effects only and
+  \code{"main+int"} for additive main effects and their interaction with
+  \code{Trait} (see Details).
 }      
 \item{fix.lines}{a logical value. If \code{TRUE} then lines existing in
   the phenotype data that do not exist in \code{genObj} are fixed and placed in
@@ -48,9 +54,6 @@ Genome wide multi-environment analysis using ASReml-R V4
 \item{n.fa}{number of factors for the Factor Analytic whole genome random marker by
   \code{Trait} interaction model. Default = 0 (see Details).
 }
-\item{main.effects}{whether to include a main effects for markers when
-       individually scanning markers (see Details).
-}   
 \item{breakout}{a numerical integer equivalent to the iteration
  where the algorithm breaks out. The default is
   -1 which ensures the algorithm scans all markers within the specified
@@ -89,17 +92,84 @@ information is collated from \code{genObj}. If \code{gen.type =
 \code{"interval.data"} components of the chromosomes in
 \code{genObj}. If \code{gen.type = "markers"} then markers are
 collated from the \code{"imputed.data"} components of the chromosomes in
-\code{genObj}. 
+\code{genObj}.
 
 The \code{Trait} argument is used as a placeholder for potentially
 different types of sectioning in the data. For example, \code{Trait} may
 be the column factor describing different experiments or
 environments. It may also be the column factor partitioning multiple
-measurements of the same experimental unit. If \code{Trait} is set to
+measurements of the same experimental unit.If \code{Trait} is set to
 \code{NULL} then the function assumes there is no sectioning of the
-data. If this is true then \code{n.fa = 0} and \code{main.effects =
-  FALSE} should also be set. If they are not then they are set by the
-function.
+data and proceeds with a single environment genome wide analysis. If
+this is true and \code{n.fa} is greater than zero the it will
+be set to \code{n.fa = 0} by the function. Additionally, if \code{type} is
+not set to \code{"main"} then an error is returned for the user to
+adjust the argument accordingly. 
+
+If \code{Trait} is non-NULL then \code{type} can be flexibly set to the
+users analysis requirements. For each of the different \code{type}
+arguments the algorithm is specified below. 
+\itemize{
+  \item \code{type = "main"} then the algorithm individually fits
+  marker/interval main effects terms only and initially assesses them for
+  significance. Marker/intervals are then retained for the final model 
+  according to the \code{qtl.window} rules outlined below.
+  \item \code{"int"} then the algorithm follows Malosetti et al.
+  (2013) and initially fits marker/interval by \code{Trait}
+  interaction effects and assesses them for significance using the
+  \code{qtl.window} rules outlined below. If significant
+  then then the model is refitted with both main and interaction
+  terms and assessed again. If the interaction is non-significant it is
+  removed from the final model and if an interaction is significant then the
+  corresponding main effect is removed from the final model to ensure
+  marker/interval effects for all levels of \code{Trait} are available.
+  \item \code{"main+int"} then the algorithm fits additive main effects
+  and their interaction with \code{Trait} are assesses both terms
+  simultaneously using the \code{qtl.window} and \code{effects.window}
+  rules outlined below. Retained terms from this process are fitted in a
+  final model. 
+}
+
+If \code{covariate} is non-NULL then the \code{covariate} will replace
+\code{Trait} in the marker scan and \code{type="main+int"} is required
+to be set. This ensures the algorithm defined above is followed with the
+exception that, if an interaction term is significant the final model
+will contain both main and interaction effects.   
+
+For all \code{type} arguments, Wald/LOD statistic profiles can be
+graphically displayed using \code{plotProfile()}. Currently there is
+only one familywise QTL thresholding method, \code{thresh = 
+"b-corr"}, a Bonferroni corrected threshold of Li & Ji (2005). Note if
+\code{type = "main+int"} then the threshold for the interaction effects
+may differ from the main effects if the effects have a differing number of 
+degrees of freedom (i.e. the number of levels in \code{Trait} is
+greater than two).
+
+The function has in-built automatic detection of putative interaction and main
+effect QTL peaks in each chromosome. This automation occurs
+in several ways. Firstly, peaks are required to be above the adjusted familywise
+Bonferroni corrected Wald/LOD values calculated using \code{thresh =
+  "b-corr"}. Within a chromosome, Wald/LOD
+statistic peaks are identified and ordered from highest to lowest.
+A \code{qtl.window} is then placed to the left and right of the highest
+peak and other peaks falling within this window are removed. If a peak
+falls outside this window and remains part of the higher peak being assessed
+then the peak outside the window is removed. For \code{type =
+  "main+int"} a final assessment is
+conducted by placing a secondary window around the
+interaction peak and removing any significant main effect terms that fall
+within \code{effects.window}. The final set of putative QTL are then
+placed as fixed effects and a final model is refitted. (Note: these two
+window arguments have low numerical defaults to match a \code{genObj}
+with centimorgan map units. These would need to be dramatically
+increased if map units, for example, were base-pairs from a physical map.)
+
+Users can break out of the algorithm using the \code{breakout}
+argument. If a numerical value greater than zero is given then the
+scanning algorithm will breakout after the specified number of
+iterations. This may be useful for quick investigation of a particular
+markers within a chromosome. This feature will be enhanced in the future
+versions of the function.
 
 It is recommended to set \code{fix.lines = TRUE} to ensure additive and
 non-additive genetic variances are estimated from lines in the
@@ -131,54 +201,6 @@ stability the Factor Analytic models are built sequentially. For
 example, if \code{n.fa = 2} is set then the models for \code{n.fa = 0}
 and \code{n.fa = 1} are fitted in sequence before the model with
 \code{n.fa = 2}.
-
-If \code{covariate = NULL} then when scanning individual markers,
-\code{main.effects = TRUE} will ensure a main marker effect as well as a
-\code{Trait} by marker interaction effect are included in the fixed
-model. Respecting statistical marginality, significant interaction
-effects have precedence over main effects. Consequently, marker main effects are only
-considered statistically significant if the interaction effects
-are non-significant. If \code{main.effects = FALSE} then only the
-\code{Trait} by marker interaction are included in the fixed model.
-If \code{covariate} is non-NULL then the \code{covariate} will replace
-\code{Trait} in the marker scan. 
-
-Both main and interaction Wald/LOD statistic profiles can be
-graphically displayed using \code{plotProfile()}.
-
-Users can break out of the algorithm using the \code{breakout}
-argument. If a numerical value greater than zero is given then the
-scanning algorithm will breakout after the specified number of
-iterations. This may be useful for quick investigation of a particular
-markers within a chromosome. This feature will be enhanced in the future
-versions of the function.
-
-Currently there is only one familywise thresholding method, \code{thresh =
-  "b-corr"}, a Bonferroni corrected threshold of Li & Ji (2005) for
-  determining significant main marker effects and \code{Trait} by
-  interaction effects. The threshold for the interaction effects will
-  differ form the main effects if the effects have a differing number of
-  degrees of freedom (i.e. the number of levels in \code{Trait} is
-  greater than two).
-
-The function has in-built automatic detection of putative interaction and main
-effect QTL peaks in each chromosome. This automation occurs
-in several ways. Firstly, peaks are required to be above the adjusted familywise
-Bonferroni corrected Wald/LOD values calculated using \code{thresh =
-  "b-corr"}. Within a chromosome, the main and interaction Wald/LOD
-statistic peaks are identified and ordered from highest to lowest.
-A \code{qtl.window} is then placed to the left and right of the highest
-peak and other peaks falling within this window are removed. If a peak
-falls outside this window and remains part of the higher peak being assessed
-then the peak outside the window is removed. A final assessment is
-conducted by placing a secondary window around the
-interaction peak and removing any significant main effects that fall
-within \code{effects.window}. The final set of putative
-interaction and main effect QTL are then placed as fixed effects and a
-final model is refitted. (Note: these two window arguments have low
-numerical defaults to match a \code{genObj} with centimorgan map
-units. These would need to be dramatically increased if map units, for
-example, were base-pairs from a physical map.)
 
 It is recommended that \code{trace = "file.txt"} be used to pipe the
 sometimes invasive tracing of \code{asreml} licensing and fitting
@@ -226,7 +248,7 @@ hwt.fa2 <- asreml(hectlitwt_500 ~ 1, random = ~ fa(Expt, 2):Genotype + at(Expt):
 # Run scanning function across chromosome 2B 
 
 hwt.qtl <- gwasreml(hwt.fa2, mapi, merge.by = "Genotype", chr = "2B",
-           Trait = "Expt", main.effects = TRUE, n.fa = 0, na.action =
+           Trait = "Expt", type = "main+int", n.fa = 0, na.action =
            na.method(x = "include"))
 
 # summarise

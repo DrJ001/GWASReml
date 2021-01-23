@@ -24,8 +24,8 @@ results from a \code{gwasreml()} run.
 }
 \details{
 This is a simple updating function to be used in conjunction with
-\code{gwasreml.asreml()} to assist in determining significant putative main
-effect QTL and putative \code{Trait} by QTL interactions. There are three
+\code{gwasreml.asreml()} to assist in determining significant putative
+QTL using multi-environment modelling. There are three
 very useful arguments from \code{gwasreml.asreml()} that can be used for
 this task. The \code{gwasreml} object can be updated by adding another
 chromosome using the \code{chr} argument. The function checks
@@ -62,7 +62,7 @@ hwt.fa2 <- asreml(hectlitwt_500 ~ 1, random = ~ fa(Expt, 2):Genotype + at(Expt):
 # Run scanning function across chromosome 2B 
 
 hwt.qtl <- gwasreml(hwt.fa2, mapi, merge.by = "Genotype", chr = "2B",
-      Trait = "Expt", main.effects = TRUE, n.fa = 0, na.action =
+      Trait = "Expt", type = "main+int", n.fa = 0, na.action =
       na.method(x = "include")) 
 
 # Update with additional chromosomes 

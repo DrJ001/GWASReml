@@ -72,7 +72,7 @@ hwt.fa2 <- asreml(hectlitwt_500 ~ 1, random = ~ fa(Expt, 2):Genotype + at(Expt):
 # Run scanning function across chromosome 2B
 
 hwt.qtl <- gwasreml(hwt.fa2, mapi, merge.by = "Genotype", chr = "2B",
-           Trait = "Expt", main.effects = TRUE, n.fa = 0, na.action =
+           Trait = "Expt", type = "main+int" = TRUE, n.fa = 0, na.action =
            na.method(x = "include"))
 
 # Plot main eeffct and interaction profiles with QTL peaks annotated.

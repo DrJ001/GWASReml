@@ -13,7 +13,7 @@ three possible different types, multi-environment, multi-variate or multi-treatm
 Package: \tab GW-ASReml\cr
 Type: \tab Package\cr
 Version: \tab 1.x\cr
-Date: \tab 2020-07-11\cr
+Date: \tab 2021-01-22\cr
 License: \tab GPL 2\cr
 }
 Welcome to version 1.x of \pkg{GW-ASReml}! The documentation given in this help file is
