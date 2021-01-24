@@ -11,7 +11,7 @@ Genome wide single and multi-environment analysis using ASReml-R V4
        Trait = NULL, covariate = NULL, type = "main+int",
        fix.lines = TRUE, chr = names(nmar(genObj)), gen.type =
        "interval", n.fa = 0, breakout = -1, thresh = "b-corr",
-       TypeI = 0.05, qtl.window = 20, effects.window = 20,
+       TypeI = 0.05, qtl.window = 40, effects.window = 20,
        trace = TRUE, \ldots)
 }
 \arguments{

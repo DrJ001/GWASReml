@@ -1,4 +1,5 @@
 \name{wgaim-internal}
+\alias{pasteT}
 \alias{constructCM}
 \alias{getQTL}
 \alias{waldTest}
