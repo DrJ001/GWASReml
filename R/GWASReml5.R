@@ -649,7 +649,7 @@ summary.gwasreml <- function (object, genObj, LOD = TRUE, ...)
     qtlm
 }
 
-waldTest.asreml <- function(object, cc, keep.fac = TRUE)
+waldTest.asreml <- function(object, cc, keep.fac = TRUE, ...)
 {
     if(oldClass(object) != "asreml")
         stop("Requires an object of class asreml\n")
