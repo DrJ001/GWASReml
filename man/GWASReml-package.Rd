@@ -1,11 +1,11 @@
-\name{GW-ASReml-package}
-\alias{GW-ASReml-package}
+\name{GWASReml-package}
+\alias{GWASReml-package}
 \docType{package}
 \title{Genome wide multi-section analysis using ASReml-R V4}
 \description{
 This package provides a flexible computational implementation of
-multi-trait QTL analysis using new technological advances in ASReml-R
-V4 functionality. Here, "multi-trait" is universal term encapsulating
+multi-section QTL analysis using new technological advances in ASReml-R
+V4 functionality. Here, "multi-section" is a universal term encapsulating
 three possible different types, multi-environment, multi-variate or multi-treatment.  
 }
 \details{
@@ -13,10 +13,10 @@ three possible different types, multi-environment, multi-variate or multi-treatm
 Package: \tab GW-ASReml\cr
 Type: \tab Package\cr
 Version: \tab 1.x\cr
-Date: \tab 2021-01-22\cr
+Date: \tab 2021-05-28\cr
 License: \tab GPL 2\cr
 }
-Welcome to version 1.x of \pkg{GW-ASReml}! The documentation given in this help file is
+Welcome to version 1.x of \pkg{GWASReml}! The documentation given in this help file is
 only brief and users should consult individual help files for the main functions of the
 package. The package requires users have an installed and fully licensed
 version of ASReml-R V4 (see

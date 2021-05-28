@@ -1,10 +1,12 @@
 \name{gwasreml.asreml}
 \alias{gwasreml.asreml}
 \alias{gwasreml}
-\title{Genome wide single multi-environment analysis using ASReml-R V4
+\title{Genome wide association analysis of single and multi-section
+  experiments using ASReml-R V4
 }
 \description{
-Genome wide single and multi-environment analysis using ASReml-R V4  
+A comprehensive marker scanning function for genome wide association
+analysis of single and multi-section (environment, trait, treatment) experiments using ASReml-R V4
 }
 \usage{
 \method{gwasreml}{asreml}(baseModel, genObj, merge.by = NULL,
@@ -98,7 +100,7 @@ The \code{Trait} argument is used as a placeholder for potentially
 different types of sectioning in the data. For example, \code{Trait} may
 be the column factor describing different experiments or
 environments. It may also be the column factor partitioning multiple
-measurements of the same experimental unit.If \code{Trait} is set to
+measurements of the same experimental unit. If \code{Trait} is set to
 \code{NULL} then the function assumes there is no sectioning of the
 data and proceeds with a single environment genome wide analysis. If
 this is true and \code{n.fa} is greater than zero the it will
@@ -124,7 +126,7 @@ arguments the algorithm is specified below.
   corresponding main effect is removed from the final model to ensure
   marker/interval effects for all levels of \code{Trait} are available.
   \item \code{"main+int"} then the algorithm fits additive main effects
-  and their interaction with \code{Trait} are assesses both terms
+  and their interaction with \code{Trait} and assesses both terms
   simultaneously using the \code{qtl.window} and \code{effects.window}
   rules outlined below. Retained terms from this process are fitted in a
   final model. 
