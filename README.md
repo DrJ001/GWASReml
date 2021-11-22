@@ -1,5 +1,5 @@
 
-### R/GWASRenl: An R package for multi-(environment/variate/treatment) GWAS analysis
+### R/GWASReml: An R package for multi-(environment/variate/treatment) GWAS analysis
 
 **Authors**: Julian Taylor
 
